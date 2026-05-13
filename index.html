@@ -295,7 +295,7 @@ body {
   height: 100%;
   overflow: hidden;
   letter-spacing: 0.05em;
-  line-height: 2.8;
+  line-height: 2.2;
   padding: 0 6px;
   display: flex;
   flex-direction: column;
@@ -310,6 +310,9 @@ body {
 .problem-line {
   padding-left: 12px;
   height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 .problem-line:first-child { padding-left: 0; }
 
@@ -328,25 +331,9 @@ body {
   margin-inline: 0.15em;   /* 縦書き flow 方向（上下）に余白 */
 }
 
-/* □＋よみ のグループ */
-/* writing-mode:horizontal-tb でラッパー内だけ水平レイアウトにして flex で配置。
-   子要素で writing-mode:vertical-rl を再指定することで内容は縦組みを維持。 */
-.blank-reading-wrap {
-  display: inline-flex;
-  writing-mode: horizontal-tb;
-  flex-direction: row;     /* 左＝□、右＝よみ（vertical-rl では右＝ルビ位置） */
-  align-items: center;
-  gap: var(--rt-gap, 0.1em);
-  vertical-align: middle;
-}
-.blank-rt {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  font-size: 0.52em;
-}
-.blank-boxes {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
+/* ルビ付き空白欄グループの前後にさらに余白 */
+ruby:has(.blank-box) {
+  margin-inline: 0.25em;
 }
 
 /* 点線十字線 */
@@ -372,7 +359,9 @@ body {
 }
 
 ruby { ruby-align: center; }
-ruby rt { font-size: 0.52em; }
+ruby rt { font-size: var(--rt-size, 0.52em); }
+/* 縦書きでは rt は□の右側に来る。padding-left で□との隙間を確保 */
+ruby:has(.blank-box) rt { padding-left: 0.4em; }
 
 /* 編集モード: 問題列 */
 .edit-mode .problem-col-wrap { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
@@ -725,7 +714,7 @@ ruby rt { font-size: 0.52em; }
     flex-shrink: 0;
     height: 100%;
     overflow: hidden;
-    line-height: 2.8;
+    line-height: 2.3;
     letter-spacing: 0.05em;
     padding: 0 3mm;
     display: flex;
@@ -762,16 +751,8 @@ ruby rt { font-size: 0.52em; }
     vertical-align: middle;
     margin-inline: 0.15em;
   }
-  .blank-reading-wrap {
-    display: inline-flex;
-    writing-mode: horizontal-tb;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--rt-gap, 0.1em);
-    vertical-align: middle;
-  }
-  .blank-rt { writing-mode: vertical-rl; text-orientation: upright; font-size: 0.52em; }
-  .blank-boxes { writing-mode: vertical-rl; text-orientation: upright; }
+  ruby:has(.blank-box) { margin-inline: 0.25em; }
+  ruby:has(.blank-box) rt { padding-left: 0.4em; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
@@ -843,12 +824,12 @@ ruby rt { font-size: 0.52em; }
       <span class="fs-val" id="fsv-box">2.0</span>
       <button class="fs-btn" onclick="adjBox(0.1)">＋</button>
     </div>
-    <!-- よみ位置 -->
+    <!-- よみサイズ -->
     <div class="fs-item">
       <span class="fs-section-label">よみ</span>
-      <button class="fs-btn" onclick="adjRtGap(-0.05)">−</button>
-      <span class="fs-val" id="fsv-rtgap">0.1</span>
-      <button class="fs-btn" onclick="adjRtGap(0.05)">＋</button>
+      <button class="fs-btn" onclick="adjRtSize(-0.02)">−</button>
+      <span class="fs-val" id="fsv-rtsize">0.52</span>
+      <button class="fs-btn" onclick="adjRtSize(0.02)">＋</button>
     </div>
   </div>
 
@@ -897,9 +878,7 @@ ruby rt { font-size: 0.52em; }
       <!-- 変換ツールバー -->
       <div class="pe-conv-bar">
         <span class="pe-conv-label">選択して：</span>
-        <button class="pe-conv-btn" id="btn-wrap-blank"   onclick="wrapBlank()">□ 空白</button>
         <button class="pe-conv-btn" id="btn-wrap-blank-r" onclick="wrapBlankReading()">□ ＋よみ</button>
-        <button class="pe-conv-btn" id="btn-wrap-ruby"    onclick="wrapRuby()">ルビのみ</button>
         <div class="pe-reading-inline" id="pe-reading-inline" style="display:none">
           <span class="pe-reading-label">よみ</span>
           <input class="pe-reading-input" id="pe-reading-input" type="text" placeholder="ひらがなで">
@@ -937,7 +916,7 @@ const STORAGE_KEY = 'kanjidrill_v3';
 const DEFAULT_FONTSIZES = { title: 22, name: 14, problems: 16, hints: 20 };
 const FS_MIN = 8, FS_MAX = 36;
 const BOX_DEFAULT = 2.0, BOX_MIN = 1.0, BOX_MAX = 4.0;
-const RT_GAP_DEFAULT = 0.1, RT_GAP_MIN = 0, RT_GAP_MAX = 1.0;
+const RT_SIZE_DEFAULT = 0.52, RT_SIZE_MIN = 0.2, RT_SIZE_MAX = 1.0;
 
 let state = {
   mode: 'edit',
@@ -948,7 +927,7 @@ let state = {
   showHintSection: true,
   showCrosshair: false,
   boxSize: BOX_DEFAULT,
-  rtGap: RT_GAP_DEFAULT,
+  rtSize: RT_SIZE_DEFAULT,
   problems: [
     { id: uid(), text: '太陽は{東|ひがし}から{昇|のぼ}る。' },
     { id: uid(), text: '{友達|ともだち}と[公園|こうえん]で{遊|あそ}んだ。' },
@@ -990,7 +969,7 @@ function blankBoxes(content, reading) {
   const cls = 'blank-box' + (state.showCrosshair ? ' has-cross' : '');
   const boxes = Array.from({length: count}, () => `<span class="${cls}"></span>`).join('');
   return reading
-    ? `<span class="blank-reading-wrap"><span class="blank-boxes">${boxes}</span><span class="blank-rt">${esc(reading)}</span></span>`
+    ? `<ruby>${boxes}<rt>${esc(reading)}</rt></ruby>`
     : boxes;
 }
 
@@ -1039,7 +1018,7 @@ function loadState() {
     if (!d.nameLabel) d.nameLabel = '名前（　　　　　　）';
     if (typeof d.showCrosshair !== 'boolean') d.showCrosshair = false;
     if (typeof d.boxSize !== 'number') d.boxSize = BOX_DEFAULT;
-    if (typeof d.rtGap !== 'number') d.rtGap = RT_GAP_DEFAULT;
+    if (typeof d.rtSize !== 'number') d.rtSize = RT_SIZE_DEFAULT;
     state = d;
   } catch (_) {}
 }
@@ -1082,21 +1061,17 @@ function adjBox(delta) {
 function applyBoxSize() {
   const sheet = document.getElementById('preview-sheet');
   sheet.style.setProperty('--blank-box-size', state.boxSize + 'em');
-  const prob = sheet.querySelector('.sheet-problems');
-  if (prob) {
-    prob.style.lineHeight = Math.max(2.2, state.boxSize + 0.8).toFixed(1);
-  }
 }
 
-function adjRtGap(delta) {
-  state.rtGap = Math.round(Math.min(RT_GAP_MAX, Math.max(RT_GAP_MIN, state.rtGap + delta)) * 100) / 100;
-  document.getElementById('fsv-rtgap').textContent = state.rtGap.toFixed(2);
-  applyRtGap();
+function adjRtSize(delta) {
+  state.rtSize = Math.round(Math.min(RT_SIZE_MAX, Math.max(RT_SIZE_MIN, state.rtSize + delta)) * 100) / 100;
+  document.getElementById('fsv-rtsize').textContent = state.rtSize.toFixed(2);
+  applyRtSize();
   saveState();
 }
 
-function applyRtGap() {
-  document.getElementById('preview-sheet').style.setProperty('--rt-gap', state.rtGap + 'em');
+function applyRtSize() {
+  document.getElementById('preview-sheet').style.setProperty('--rt-size', state.rtSize + 'em');
 }
 
 function applyFontSizes() {
@@ -1118,7 +1093,7 @@ function syncFSStepper() {
     if (el) el.textContent = v;
   }
   document.getElementById('fsv-box').textContent = state.boxSize.toFixed(1);
-  document.getElementById('fsv-rtgap').textContent = state.rtGap.toFixed(2);
+  document.getElementById('fsv-rtsize').textContent = state.rtSize.toFixed(2);
 }
 
 /* ============================================================
@@ -1182,7 +1157,7 @@ function renderSheet() {
     <div class="sheet-vbox">
       ${titleCol}
       ${nameCol}
-      <div class="sheet-problems" style="font-size:${state.fontSizes.problems}px;line-height:${Math.max(2.2, state.boxSize + 0.8).toFixed(1)}">
+      <div class="sheet-problems" style="font-size:${state.fontSizes.problems}px">
         ${problemsHTML}${addCol}
       </div>
       ${hintCol}
@@ -1451,7 +1426,7 @@ document.getElementById('toggle-hint').checked = state.showHintSection;
 document.getElementById('toggle-crosshair').checked = state.showCrosshair;
 syncFSStepper();
 applyBoxSize();
-applyRtGap();
+applyRtSize();
 renderAll();
 setMode(state.mode);
 </script>
