@@ -335,8 +335,8 @@ body {
   display: inline-flex;
   writing-mode: horizontal-tb;
   flex-direction: row;     /* 左＝□、右＝よみ（vertical-rl では右＝ルビ位置） */
-  align-items: flex-start;
-  gap: 0.15em;
+  align-items: center;
+  gap: var(--rt-gap, 0.1em);
   vertical-align: middle;
 }
 .blank-rt {
@@ -766,8 +766,8 @@ ruby rt { font-size: 0.52em; }
     display: inline-flex;
     writing-mode: horizontal-tb;
     flex-direction: row;
-    align-items: flex-start;
-    gap: 0.15em;
+    align-items: center;
+    gap: var(--rt-gap, 0.1em);
     vertical-align: middle;
   }
   .blank-rt { writing-mode: vertical-rl; text-orientation: upright; font-size: 0.52em; }
@@ -842,6 +842,13 @@ ruby rt { font-size: 0.52em; }
       <button class="fs-btn" onclick="adjBox(-0.1)">−</button>
       <span class="fs-val" id="fsv-box">2.0</span>
       <button class="fs-btn" onclick="adjBox(0.1)">＋</button>
+    </div>
+    <!-- よみ位置 -->
+    <div class="fs-item">
+      <span class="fs-section-label">よみ</span>
+      <button class="fs-btn" onclick="adjRtGap(-0.05)">−</button>
+      <span class="fs-val" id="fsv-rtgap">0.1</span>
+      <button class="fs-btn" onclick="adjRtGap(0.05)">＋</button>
     </div>
   </div>
 
@@ -930,6 +937,7 @@ const STORAGE_KEY = 'kanjidrill_v3';
 const DEFAULT_FONTSIZES = { title: 22, name: 14, problems: 16, hints: 20 };
 const FS_MIN = 8, FS_MAX = 36;
 const BOX_DEFAULT = 2.0, BOX_MIN = 1.0, BOX_MAX = 4.0;
+const RT_GAP_DEFAULT = 0.1, RT_GAP_MIN = 0, RT_GAP_MAX = 1.0;
 
 let state = {
   mode: 'edit',
@@ -940,6 +948,7 @@ let state = {
   showHintSection: true,
   showCrosshair: false,
   boxSize: BOX_DEFAULT,
+  rtGap: RT_GAP_DEFAULT,
   problems: [
     { id: uid(), text: '太陽は{東|ひがし}から{昇|のぼ}る。' },
     { id: uid(), text: '{友達|ともだち}と[公園|こうえん]で{遊|あそ}んだ。' },
@@ -1030,6 +1039,7 @@ function loadState() {
     if (!d.nameLabel) d.nameLabel = '名前（　　　　　　）';
     if (typeof d.showCrosshair !== 'boolean') d.showCrosshair = false;
     if (typeof d.boxSize !== 'number') d.boxSize = BOX_DEFAULT;
+    if (typeof d.rtGap !== 'number') d.rtGap = RT_GAP_DEFAULT;
     state = d;
   } catch (_) {}
 }
@@ -1078,6 +1088,17 @@ function applyBoxSize() {
   }
 }
 
+function adjRtGap(delta) {
+  state.rtGap = Math.round(Math.min(RT_GAP_MAX, Math.max(RT_GAP_MIN, state.rtGap + delta)) * 100) / 100;
+  document.getElementById('fsv-rtgap').textContent = state.rtGap.toFixed(2);
+  applyRtGap();
+  saveState();
+}
+
+function applyRtGap() {
+  document.getElementById('preview-sheet').style.setProperty('--rt-gap', state.rtGap + 'em');
+}
+
 function applyFontSizes() {
   const sheet = document.getElementById('preview-sheet');
   const el = {
@@ -1097,6 +1118,7 @@ function syncFSStepper() {
     if (el) el.textContent = v;
   }
   document.getElementById('fsv-box').textContent = state.boxSize.toFixed(1);
+  document.getElementById('fsv-rtgap').textContent = state.rtGap.toFixed(2);
 }
 
 /* ============================================================
@@ -1429,6 +1451,7 @@ document.getElementById('toggle-hint').checked = state.showHintSection;
 document.getElementById('toggle-crosshair').checked = state.showCrosshair;
 syncFSStepper();
 applyBoxSize();
+applyRtGap();
 renderAll();
 setMode(state.mode);
 </script>
