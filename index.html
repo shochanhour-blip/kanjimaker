@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字ドリルメーカー</title>
+<style>
+:root {
+  --primary:       #3a7d44;
+  --primary-light: #e6f4e8;
+  --border:        #d8d8d8;
+  --bg:            #e8e8e8;
+  --white:         #ffffff;
+  --text:          #222;
+  --muted:         #777;
+  --radius:        8px;
+  --shadow:        0 4px 20px rgba(0,0,0,0.14);
+  --toolbar-h:     56px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===========================
+   ツールバー
+=========================== */
+.toolbar {
+  height: var(--toolbar-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 0;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  z-index: 10;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* モードタブ */
+.mode-tabs {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-right: 14px;
+}
+.tab {
+  padding: 5px 16px;
+  border: none;
+  border-radius: 17px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  color: var(--muted);
+  background: transparent;
+  white-space: nowrap;
+}
+.tab.active {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.14);
+}
+
+.tb-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 12px;
+}
+
+/* ===== 文字サイズ（セクションごと） ===== */
+.fs-group {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--white);
+  height: 32px;
+}
+.fs-group-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.fs-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8px;
+  border-right: 1px solid var(--border);
+}
+.fs-item:last-child { border-right: none; }
+.fs-section-label {
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 24px;
+  text-align: right;
+  margin-right: 2px;
+}
+.fs-btn {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  background: #f5f5f5;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  color: var(--text);
+  padding: 0;
+  flex-shrink: 0;
+}
+.fs-btn:hover { background: #e8e8e8; }
+.fs-val {
+  min-width: 28px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+/* ===== トグルスイッチ ===== */
+.toggle-group { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.sw { position: relative; width: 34px; height: 19px; flex-shrink: 0; }
+.sw input { display: none; }
+.sw-track {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 19px;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+.sw-track::before {
+  content: '';
+  position: absolute;
+  width: 13px; height: 13px;
+  background: white;
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  transition: transform 0.25s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.sw input:checked + .sw-track { background: var(--primary); }
+.sw input:checked + .sw-track::before { transform: translateX(15px); }
+
+/* ===== ツールバー右 ===== */
+.toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-left: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: bold;
+  transition: opacity 0.15s, transform 0.1s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn-print-main { background: #1a5fa8; color: white; font-size: 13px; padding: 7px 18px; }
+
+/* ===========================
+   メインエリア
+=========================== */
+.main-area {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 28px;
+  background: var(--bg);
+}
+
+/* ===========================
+   ワークシート
+=========================== */
+.print-sheet {
+  background: white;
+  box-shadow: var(--shadow);
+  width: 960px;
+  height: 660px;
+  padding: 36px 44px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* 縦書きメインボックス */
+.sheet-vbox {
+  display: flex;
+  flex-direction: row-reverse;   /* DOM順のまま右端から並ぶ */
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== 題名列 ===== */
+.sheet-title-col {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-weight: bold;
+  flex-shrink: 0;
+  padding: 0 10px;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  outline: none;
+  white-space: pre-wrap;
+  min-width: 1.4em;
+  cursor: text;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.edit-mode .sheet-title-col:hover { background: var(--primary-light); }
+.edit-mode .sheet-title-col:focus { background: #f0fff2; box-shadow: 0 0 0 2px var(--primary); }
+
+/* ===== 名前列 ===== */
+.sheet-name-col {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0 8px;
+  outline: none;
+  white-space: pre-wrap;
+  min-width: 1.4em;
+  cursor: text;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.edit-mode .sheet-name-col:hover { background: var(--primary-light); }
+.edit-mode .sheet-name-col:focus { background: #f0fff2; box-shadow: 0 0 0 2px var(--primary); }
+
+
+/* ===== 問題列群 ===== */
+.sheet-problems {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  letter-spacing: 0.05em;
+  line-height: 2.2;
+  padding: 0 6px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.problem-col-wrap {
+  position: relative;
+  height: 100%;
+  flex-shrink: 0;
+}
+.problem-line {
+  padding-left: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.problem-line:first-child { padding-left: 0; }
+
+.pnum { font-weight: bold; }
+
+/* ===== 書き込み欄（□の代わり） ===== */
+.blank-box {
+  display: inline-block;
+  width:  var(--blank-box-size, 2em);
+  height: var(--blank-box-size, 2em);
+  border: 1.5px solid #333;
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+  vertical-align: middle;
+  margin-inline: 0.15em;   /* 縦書き flow 方向（上下）に余白 */
+}
+
+/* ルビ付き空白欄グループの前後にさらに余白 */
+ruby:has(.blank-box) {
+  margin-inline: 0.25em;
+}
+
+/* 点線十字線 */
+.blank-box.has-cross::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  right: 3px;
+  height: 0;
+  border-top: 1px dashed #bbb;
+  transform: translateY(-50%);
+}
+.blank-box.has-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 0;
+  border-left: 1px dashed #bbb;
+  transform: translateX(-50%);
+}
+
+ruby { ruby-align: center; }
+ruby rt { font-size: 0.52em; }
+/* 縦書きでは rt は□の右側に来る。padding-left で□との隙間を確保 */
+ruby:has(.blank-box) rt { padding-left: 0.4em; }
+
+/* 編集モード: 問題列 */
+.edit-mode .problem-col-wrap { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+.edit-mode .problem-col-wrap:hover { background: var(--primary-light); }
+.edit-mode .problem-col-wrap:hover .prob-hover-tools { opacity: 1; }
+
+.prob-hover-tools {
+  writing-mode: horizontal-tb;
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 5;
+  background: rgba(255,255,255,0.97);
+  border-radius: 5px;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.ph-btn {
+  border: none;
+  background: transparent;
+  padding: 3px 5px;
+  cursor: pointer;
+  font-size: 11px;
+  border-radius: 3px;
+  transition: background 0.12s;
+  color: var(--text);
+}
+.ph-btn:hover { background: #eee; }
+.ph-btn.ph-del { color: #c00; }
+.ph-btn.ph-del:hover { background: #ffe5e5; }
+
+/* 問題追加列 */
+.add-problem-col {
+  flex-shrink: 0;
+  height: 100%;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  margin-left: 8px;
+  transition: border-color 0.15s, background 0.15s;
+  writing-mode: horizontal-tb;
+  color: #bbb;
+  font-size: 22px;
+  font-weight: 300;
+}
+.add-problem-col:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+
+/* ===== ヒント列 ===== */
+.sheet-hint-col {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  margin-right: auto;   /* 右隣との間に自動余白を吸収させ左端へ */
+  flex-shrink: 0;
+  height: 100%;
+  border-right: 1px solid #bbb;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 5px;
+}
+.hint-col-label { font-size: 0.75em; font-weight: bold; color: #666; flex-shrink: 0; }
+.hint-chips-vert {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: flex-start;
+}
+.hint-chip {
+  border: 1.5px solid #555;
+  border-radius: 4px;
+  padding: 6px 4px;
+  cursor: grab;
+  user-select: none;
+  background: white;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+.hint-chip:hover { background: var(--primary-light); }
+.hint-chip:active { cursor: grabbing; }
+.hint-chip.dragging { opacity: 0.35; }
+.hint-chip.drag-over { background: var(--primary-light); border-color: var(--primary); border-style: dashed; }
+
+/* ===========================
+   問題エディターモーダル
+=========================== */
+.pe-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.22);
+  z-index: 100;
+}
+.pe-backdrop.open { display: block; }
+
+.pe-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+  z-index: 101;
+  width: 580px;
+  max-width: 95vw;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popIn 0.16s forwards;
+}
+.pe-modal.open { display: flex; }
+
+@keyframes popIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.93); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.pe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+.pe-num { font-weight: bold; font-size: 13px; color: var(--primary); }
+.pe-header-actions { display: flex; gap: 6px; align-items: center; }
+.pe-del-btn {
+  padding: 4px 10px;
+  border: 1px solid #fcc;
+  border-radius: 5px;
+  background: transparent;
+  color: #c00;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.pe-del-btn:hover { background: #ffe5e5; }
+.pe-close-btn {
+  width: 26px; height: 26px;
+  border: none;
+  background: #eee;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+.pe-close-btn:hover { background: #ddd; }
+
+.pe-body { display: flex; height: 250px; }
+
+.pe-input-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* 変換ツールバー */
+.pe-conv-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: #f7f7f7;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.pe-conv-label {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+.pe-conv-btn {
+  padding: 4px 10px;
+  border: 1.5px solid var(--primary);
+  border-radius: 5px;
+  background: white;
+  color: var(--primary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.pe-conv-btn:hover { background: var(--primary); color: white; }
+
+/* よみ入力インライン */
+.pe-reading-inline {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-left: 2px;
+}
+.pe-reading-label { font-size: 11px; color: var(--primary); font-weight: bold; }
+.pe-reading-input {
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-family: inherit;
+  width: 90px;
+  outline: none;
+}
+.pe-reading-ok {
+  padding: 3px 9px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: bold;
+}
+.pe-reading-ok:hover { opacity: 0.85; }
+.pe-reading-cancel {
+  width: 20px; height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.pe-reading-cancel:hover { background: #ddd; }
+
+.pe-ta {
+  flex: 1;
+  border: none;
+  border-top: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  line-height: 1.9;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-5px); }
+  75%      { transform: translateX(5px); }
+}
+
+.pe-preview-area {
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 5px;
+  background: #fafafa;
+}
+.pe-preview-label { font-size: 10px; color: var(--muted); font-weight: bold; writing-mode: horizontal-tb; }
+.pe-preview-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 14px;
+  line-height: 2;
+  flex: 1;
+  overflow: hidden;
+  letter-spacing: 0.05em;
+}
+
+.pe-footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pe-guide-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+.pe-guide-item code {
+  background: #e8e8e8;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #444;
+}
+
+/* ===========================
+   印刷専用スタイル
+=========================== */
+@media print {
+  body { background: white !important; overflow: visible; height: auto; }
+  .toolbar, .main-area { display: none !important; }
+  #print-output { display: block !important; }
+
+  @page { size: A4 landscape; margin: 12mm; }
+
+  #print-output {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  }
+  .po-vbox {
+    display: flex;
+    flex-direction: row-reverse;
+    height: 165mm;
+    overflow: hidden;
+  }
+  .po-title-col {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-weight: bold;
+    flex-shrink: 0;
+    padding: 0 4mm;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+  }
+  .po-name-col {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    flex-shrink: 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 0 4mm;
+  }
+  .po-problems {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden;
+    line-height: 2.3;
+    letter-spacing: 0.05em;
+    padding: 0 3mm;
+    display: flex;
+    flex-direction: column;
+  }
+  .po-problem-line { padding-left: 5mm; height: 100%; }
+  .po-problem-line:first-child { padding-left: 0; }
+  .po-pnum { font-weight: bold; }
+  .po-hint-col {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    margin-right: auto;
+    flex-shrink: 0;
+    height: 100%;
+    border-right: 0.3mm solid #aaa;
+    padding-right: 3mm;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 2mm;
+  }
+  .po-hint-label { font-weight: bold; color: #666; flex-shrink: 0; }
+  .po-hint-chips { display: flex; flex-direction: row; flex-wrap: wrap; gap: 3mm; align-content: flex-start; }
+  .po-hint-chip { border: 0.3mm solid #444; border-radius: 1mm; padding: 1.5mm 1mm; }
+
+  /* 書き込み欄（印刷時） */
+  .blank-box {
+    display: inline-block;
+    width: var(--blank-box-size, 2em);
+    height: var(--blank-box-size, 2em);
+    border: 0.4mm solid #333;
+    position: relative;
+    background: white;
+    vertical-align: middle;
+    margin-inline: 0.15em;
+  }
+  ruby:has(.blank-box) { margin-inline: 0.25em; }
+  ruby:has(.blank-box) rt { padding-left: 0.4em; }
+  .blank-box.has-cross::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 1mm;
+    right: 1mm;
+    height: 0;
+    border-top: 0.2mm dashed #bbb;
+    transform: translateY(-50%);
+  }
+  .blank-box.has-cross::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 1mm;
+    bottom: 1mm;
+    width: 0;
+    border-left: 0.2mm dashed #bbb;
+    transform: translateX(-50%);
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ツールバー ===== -->
+<div class="toolbar">
+  <!-- モードタブ -->
+  <div class="mode-tabs">
+    <button class="tab active" id="tab-edit" onclick="setMode('edit')">✏️ 設定</button>
+    <button class="tab" id="tab-print" onclick="setMode('print')">🖨️ 印刷</button>
+  </div>
+
+  <!-- 文字サイズ（セクションごと） -->
+  <div class="fs-group" id="fs-group">
+    <span class="fs-group-label">文字サイズ</span>
+    <!-- 題名 -->
+    <div class="fs-item">
+      <span class="fs-section-label">題名</span>
+      <button class="fs-btn" onclick="adjFS('title',-1)">−</button>
+      <span class="fs-val" id="fsv-title">22</span>
+      <button class="fs-btn" onclick="adjFS('title',1)">＋</button>
+    </div>
+    <!-- 名前 -->
+    <div class="fs-item">
+      <span class="fs-section-label">名前</span>
+      <button class="fs-btn" onclick="adjFS('name',-1)">−</button>
+      <span class="fs-val" id="fsv-name">14</span>
+      <button class="fs-btn" onclick="adjFS('name',1)">＋</button>
+    </div>
+    <!-- 問題 -->
+    <div class="fs-item">
+      <span class="fs-section-label">問題</span>
+      <button class="fs-btn" onclick="adjFS('problems',-1)">−</button>
+      <span class="fs-val" id="fsv-problems">16</span>
+      <button class="fs-btn" onclick="adjFS('problems',1)">＋</button>
+    </div>
+    <!-- ヒント -->
+    <div class="fs-item">
+      <span class="fs-section-label">ヒント</span>
+      <button class="fs-btn" onclick="adjFS('hints',-1)">−</button>
+      <span class="fs-val" id="fsv-hints">20</span>
+      <button class="fs-btn" onclick="adjFS('hints',1)">＋</button>
+    </div>
+    <!-- □サイズ -->
+    <div class="fs-item">
+      <span class="fs-section-label">□</span>
+      <button class="fs-btn" onclick="adjBox(-0.1)">−</button>
+      <span class="fs-val" id="fsv-box">2.0</span>
+      <button class="fs-btn" onclick="adjBox(0.1)">＋</button>
+    </div>
+  </div>
+
+  <div class="tb-sep" id="sep1"></div>
+
+  <!-- 氏名・ヒントトグル -->
+  <div class="toggle-group" id="toggle-group">
+    <label class="toggle-label">
+      <span class="sw"><input type="checkbox" id="toggle-name" checked><span class="sw-track"></span></span>
+      名前欄
+    </label>
+    <label class="toggle-label">
+      <span class="sw"><input type="checkbox" id="toggle-hint" checked><span class="sw-track"></span></span>
+      ヒント欄
+    </label>
+    <label class="toggle-label">
+      <span class="sw"><input type="checkbox" id="toggle-crosshair"><span class="sw-track"></span></span>
+      十字線
+    </label>
+  </div>
+
+  <!-- 右側 -->
+  <div class="toolbar-right">
+    <button class="btn btn-outline" id="btn-add" onclick="addProblem()">＋ 問題追加</button>
+    <button class="btn btn-print-main" id="btn-print-main" style="display:none" onclick="doPrint()">🖨️ 印刷する</button>
+  </div>
+</div>
+
+<!-- ===== メインエリア ===== -->
+<div class="main-area">
+  <div class="print-sheet edit-mode" id="preview-sheet"></div>
+</div>
+
+<!-- ===== 問題エディターモーダル ===== -->
+<div class="pe-backdrop" id="pe-backdrop" onclick="closeEditor()"></div>
+<div class="pe-modal" id="pe-modal">
+  <div class="pe-header">
+    <span class="pe-num" id="pe-num-label">問題一</span>
+    <div class="pe-header-actions">
+      <button class="pe-del-btn" onclick="deleteCurrent()">削除</button>
+      <button class="pe-close-btn" onclick="closeEditor()">✕</button>
+    </div>
+  </div>
+  <div class="pe-body">
+    <div class="pe-input-area">
+      <!-- 変換ツールバー -->
+      <div class="pe-conv-bar">
+        <span class="pe-conv-label">選択して：</span>
+        <button class="pe-conv-btn" id="btn-wrap-blank"   onclick="wrapBlank()">□ 空白</button>
+        <button class="pe-conv-btn" id="btn-wrap-blank-r" onclick="wrapBlankReading()">□ ＋よみ</button>
+        <button class="pe-conv-btn" id="btn-wrap-ruby"    onclick="wrapRuby()">ルビのみ</button>
+        <div class="pe-reading-inline" id="pe-reading-inline" style="display:none">
+          <span class="pe-reading-label">よみ</span>
+          <input class="pe-reading-input" id="pe-reading-input" type="text" placeholder="ひらがなで">
+          <button class="pe-reading-ok" onclick="confirmReading()">確定</button>
+          <button class="pe-reading-cancel" onclick="cancelReading()">✕</button>
+        </div>
+      </div>
+      <textarea class="pe-ta" id="pe-ta"
+        placeholder="例：太陽は東から昇る。&#10;（□にしたい文字を選択してボタンを押す）"
+        oninput="onEditorInput(this.value)"></textarea>
+    </div>
+    <div class="pe-preview-area">
+      <div class="pe-preview-label">プレビュー</div>
+      <div class="pe-preview-text" id="pe-preview"></div>
+    </div>
+  </div>
+  <div class="pe-footer">
+    <div class="pe-guide-item" style="color:#aaa;font-size:10px">記法で直接入力も可：<code>{漢字}</code>　<code>{漢字|よみ}</code>　<code>[漢字|よみ]</code></div>
+  </div>
+</div>
+
+<!-- 印刷専用出力 -->
+<div id="print-output" style="display:none"></div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   定数・状態
+============================================================ */
+const CIRCLE_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
+                     '⑪','⑫','⑬','⑭','⑮'];
+const STORAGE_KEY = 'kanjidrill_v3';
+
+const DEFAULT_FONTSIZES = { title: 22, name: 14, problems: 16, hints: 20 };
+const FS_MIN = 8, FS_MAX = 36;
+const BOX_DEFAULT = 2.0, BOX_MIN = 1.0, BOX_MAX = 4.0;
+
+let state = {
+  mode: 'edit',
+  title: '漢字ドリル①',
+  nameLabel: '名前（　　　　　　）',
+  fontSizes: { ...DEFAULT_FONTSIZES },
+  showNameField: true,
+  showHintSection: true,
+  showCrosshair: false,
+  boxSize: BOX_DEFAULT,
+  problems: [
+    { id: uid(), text: '太陽は{東|ひがし}から{昇|のぼ}る。' },
+    { id: uid(), text: '{友達|ともだち}と[公園|こうえん]で{遊|あそ}んだ。' },
+    { id: uid(), text: '' },
+  ],
+  hintOrder: [],
+};
+
+let editingId = null;
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* ============================================================
+   パーサー
+============================================================ */
+function parseText(text) {
+  const tokens = [];
+  const re = /\{([^|}]+)(?:\|([^}]*))?\}|\[([^\]|]+)\|([^\]]+)\]/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) tokens.push({ type: 'text', content: text.slice(last, m.index) });
+    if (m[0][0] === '{') tokens.push({ type: 'blank', content: m[1], reading: m[2] || null });
+    else tokens.push({ type: 'ruby', content: m[3], reading: m[4] });
+    last = re.lastIndex;
+  }
+  if (last < text.length) tokens.push({ type: 'text', content: text.slice(last) });
+  return tokens;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function blankBoxes(content, reading) {
+  const count = Math.max(1, [...content].length);
+  const cls = 'blank-box' + (state.showCrosshair ? ' has-cross' : '');
+  const boxes = Array.from({length: count}, () => `<span class="${cls}"></span>`).join('');
+  return reading
+    ? `<ruby>${boxes}<rt>${esc(reading)}</rt></ruby>`
+    : boxes;
+}
+
+function tokensToHTML(tokens) {
+  return tokens.map(t => {
+    if (t.type === 'text') return esc(t.content);
+    if (t.type === 'blank') return blankBoxes(t.content, t.reading);
+    if (t.type === 'ruby') return `<ruby>${esc(t.content)}<rt>${esc(t.reading)}</rt></ruby>`;
+    return '';
+  }).join('');
+}
+
+function collectHints() {
+  const seen = new Set(), hints = [];
+  for (const p of state.problems)
+    for (const t of parseText(p.text))
+      if (t.type === 'blank' && !seen.has(t.content)) { seen.add(t.content); hints.push(t.content); }
+  return hints;
+}
+
+function syncHintOrder() {
+  const current = collectHints();
+  const kept = state.hintOrder.filter(h => current.includes(h));
+  const added = current.filter(h => !kept.includes(h));
+  for (let i = added.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [added[i], added[j]] = [added[j], added[i]];
+  }
+  state.hintOrder = [...kept, ...added];
+}
+
+/* ============================================================
+   永続化
+============================================================ */
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (!Array.isArray(d.problems)) return;
+    // fontSizes が古い形式でも安全にマージ
+    d.fontSizes = { ...DEFAULT_FONTSIZES, ...(d.fontSizes || {}) };
+    if (!d.nameLabel) d.nameLabel = '名前（　　　　　　）';
+    if (typeof d.showCrosshair !== 'boolean') d.showCrosshair = false;
+    if (typeof d.boxSize !== 'number') d.boxSize = BOX_DEFAULT;
+    state = d;
+  } catch (_) {}
+}
+
+/* ============================================================
+   モード切替
+============================================================ */
+function setMode(mode) {
+  state.mode = mode;
+  saveState();
+  const isEdit = mode === 'edit';
+  document.getElementById('tab-edit').classList.toggle('active', isEdit);
+  document.getElementById('tab-print').classList.toggle('active', !isEdit);
+  ['fs-group','sep1','toggle-group','btn-add'].forEach(id => {
+    document.getElementById(id).style.display = isEdit ? '' : 'none';
+  });
+  document.getElementById('btn-print-main').style.display = isEdit ? 'none' : '';
+  document.getElementById('preview-sheet').classList.toggle('edit-mode', isEdit);
+  renderSheet();
+}
+
+/* ============================================================
+   文字サイズ（セクションごと）
+============================================================ */
+function adjFS(section, delta) {
+  const cur = state.fontSizes[section] || DEFAULT_FONTSIZES[section];
+  state.fontSizes[section] = Math.min(FS_MAX, Math.max(FS_MIN, cur + delta));
+  document.getElementById('fsv-' + section).textContent = state.fontSizes[section];
+  applyFontSizes();
+  saveState();
+}
+
+function adjBox(delta) {
+  state.boxSize = Math.round(Math.min(BOX_MAX, Math.max(BOX_MIN, state.boxSize + delta)) * 10) / 10;
+  document.getElementById('fsv-box').textContent = state.boxSize.toFixed(1);
+  applyBoxSize();
+  saveState();
+}
+
+function applyBoxSize() {
+  const sheet = document.getElementById('preview-sheet');
+  sheet.style.setProperty('--blank-box-size', state.boxSize + 'em');
+}
+
+function applyFontSizes() {
+  const sheet = document.getElementById('preview-sheet');
+  const el = {
+    title:    sheet.querySelector('.sheet-title-col'),
+    name:     sheet.querySelector('.sheet-name-col'),
+    problems: sheet.querySelector('.sheet-problems'),
+    hints:    sheet.querySelector('.sheet-hint-col'),
+  };
+  for (const [k, node] of Object.entries(el)) {
+    if (node) node.style.fontSize = state.fontSizes[k] + 'px';
+  }
+}
+
+function syncFSStepper() {
+  for (const [k, v] of Object.entries(state.fontSizes)) {
+    const el = document.getElementById('fsv-' + k);
+    if (el) el.textContent = v;
+  }
+  document.getElementById('fsv-box').textContent = state.boxSize.toFixed(1);
+}
+
+/* ============================================================
+   シートレンダー
+============================================================ */
+function renderSheet() {
+  const sheet = document.getElementById('preview-sheet');
+  const isEdit = state.mode === 'edit';
+
+  /* 題名列 */
+  const titleCol = `
+    <div class="sheet-title-col"
+      style="font-size:${state.fontSizes.title}px"
+      ${isEdit ? `contenteditable="true" spellcheck="false"
+        oninput="onTitleInput(this.textContent)"
+        title="クリックして題名を編集"` : ''}
+    >${esc(state.title)}</div>`;
+
+  /* 名前列 */
+  const nameCol = state.showNameField ? `
+    <div class="sheet-name-col"
+      style="font-size:${state.fontSizes.name}px"
+      ${isEdit ? `contenteditable="true" spellcheck="false"
+        oninput="onNameLabelInput(this.textContent)"
+        title="クリックして名前欄を編集"` : ''}
+    >${esc(state.nameLabel)}</div>` : '';
+
+  /* 問題列群 */
+  const valid = state.problems.filter(p => p.text.trim());
+  const problemsHTML = valid.map((p, i) => {
+    const num = CIRCLE_NUMS[i] || (i + 1);
+    const html = tokensToHTML(parseText(p.text));
+    return isEdit ? `
+      <div class="problem-col-wrap" onclick="openEditor('${p.id}')">
+        <div class="prob-hover-tools" onclick="event.stopPropagation()">
+          <button class="ph-btn" onclick="moveProblem('${p.id}',-1)">↑</button>
+          <button class="ph-btn" onclick="moveProblem('${p.id}',1)">↓</button>
+          <button class="ph-btn ph-del" onclick="deleteProblem('${p.id}')">✕</button>
+        </div>
+        <div class="problem-line"><span class="pnum">${num}</span>${html}</div>
+      </div>` : `
+      <div class="problem-col-wrap">
+        <div class="problem-line"><span class="pnum">${num}</span>${html}</div>
+      </div>`;
+  }).join('');
+
+  const addCol = isEdit
+    ? `<div class="add-problem-col" onclick="addProblem()" title="問題を追加">＋</div>` : '';
+
+  /* ヒント列 */
+  const chips = state.hintOrder
+    .map(h => `<span class="hint-chip" draggable="${isEdit}" data-word="${esc(h)}">${esc(h)}</span>`)
+    .join('');
+  const hintCol = (state.showHintSection && state.hintOrder.length > 0) ? `
+    <div class="sheet-hint-col" style="font-size:${state.fontSizes.hints}px">
+      <span class="hint-col-label">ヒント</span>
+      <div class="hint-chips-vert" id="hint-chips-area">${chips}</div>
+    </div>` : '';
+
+  sheet.innerHTML = `
+    <div class="sheet-vbox">
+      ${titleCol}
+      ${nameCol}
+      <div class="sheet-problems" style="font-size:${state.fontSizes.problems}px">
+        ${problemsHTML}${addCol}
+      </div>
+      ${hintCol}
+    </div>`;
+
+  if (isEdit) attachDragDrop();
+}
+
+function renderAll() {
+  syncHintOrder();
+  renderSheet();
+  saveState();
+}
+
+/* ============================================================
+   インライン編集ハンドラー
+============================================================ */
+function onTitleInput(text) { state.title = text; saveState(); }
+function onNameLabelInput(text) { state.nameLabel = text; saveState(); }
+
+/* ============================================================
+   問題エディターモーダル
+============================================================ */
+function openEditor(id) {
+  editingId = id;
+  const p = state.problems.find(p => p.id === id);
+  if (!p) return;
+  const i = state.problems.indexOf(p);
+  document.getElementById('pe-num-label').textContent =
+    `問題${CIRCLE_NUMS[i] || (i + 1)} の編集`;
+  const ta = document.getElementById('pe-ta');
+  ta.value = p.text;
+  updateEditorPreview(p.text, i);
+  document.getElementById('pe-backdrop').classList.add('open');
+  document.getElementById('pe-modal').classList.add('open');
+  ta.focus();
+}
+
+function closeEditor() {
+  cancelReading();
+  editingId = null;
+  document.getElementById('pe-backdrop').classList.remove('open');
+  document.getElementById('pe-modal').classList.remove('open');
+}
+
+/* ============================================================
+   テキスト選択 → 変換
+============================================================ */
+let pendingWrap = null;
+
+function wrapBlank() {
+  const ta = document.getElementById('pe-ta');
+  const { selectionStart: s, selectionEnd: e } = ta;
+  if (s === e) { shakeConvBtn('btn-wrap-blank'); return; }
+  applyWrap(ta, s, e, `{${ta.value.slice(s, e)}}`);
+}
+
+function wrapBlankReading() {
+  const ta = document.getElementById('pe-ta');
+  const { selectionStart: s, selectionEnd: e } = ta;
+  if (s === e) { shakeConvBtn('btn-wrap-blank-r'); return; }
+  pendingWrap = { mode: 'blank-r', start: s, end: e, text: ta.value.slice(s, e) };
+  showReadingInput();
+}
+
+function wrapRuby() {
+  const ta = document.getElementById('pe-ta');
+  const { selectionStart: s, selectionEnd: e } = ta;
+  if (s === e) { shakeConvBtn('btn-wrap-ruby'); return; }
+  pendingWrap = { mode: 'ruby', start: s, end: e, text: ta.value.slice(s, e) };
+  showReadingInput();
+}
+
+function showReadingInput() {
+  const el = document.getElementById('pe-reading-inline');
+  const inp = document.getElementById('pe-reading-input');
+  el.style.display = 'flex';
+  inp.value = '';
+  inp.focus();
+}
+
+function confirmReading() {
+  if (!pendingWrap) return;
+  const reading = document.getElementById('pe-reading-input').value;
+  const ta = document.getElementById('pe-ta');
+  const { mode, start, end, text } = pendingWrap;
+  const wrapped = mode === 'ruby' ? `[${text}|${reading}]` : `{${text}|${reading}}`;
+  applyWrap(ta, start, end, wrapped);
+  cancelReading();
+}
+
+function cancelReading() {
+  pendingWrap = null;
+  const el = document.getElementById('pe-reading-inline');
+  if (el) el.style.display = 'none';
+}
+
+function applyWrap(ta, start, end, replacement) {
+  ta.value = ta.value.slice(0, start) + replacement + ta.value.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + replacement.length;
+  onEditorInput(ta.value);
+  ta.focus();
+}
+
+function shakeConvBtn(id) {
+  const btn = document.getElementById(id);
+  btn.style.animation = 'none';
+  btn.offsetHeight;
+  btn.style.animation = 'shake 0.3s';
+}
+
+function onEditorInput(text) {
+  if (!editingId) return;
+  const p = state.problems.find(p => p.id === editingId);
+  if (!p) return;
+  p.text = text;
+  const i = state.problems.indexOf(p);
+  updateEditorPreview(text, i);
+  syncHintOrder();
+  renderSheet();
+  saveState();
+}
+
+function updateEditorPreview(text, idx) {
+  const num = CIRCLE_NUMS[idx] || (idx + 1);
+  document.getElementById('pe-preview').innerHTML =
+    `<span class="pnum">${num}</span>${tokensToHTML(parseText(text))}`;
+}
+
+function deleteCurrent() {
+  if (!editingId) return;
+  const id = editingId;
+  closeEditor();
+  deleteProblem(id);
+}
+
+/* ============================================================
+   問題操作
+============================================================ */
+function addProblem() {
+  state.problems.push({ id: uid(), text: '' });
+  renderAll();
+  const last = state.problems[state.problems.length - 1];
+  requestAnimationFrame(() => openEditor(last.id));
+}
+
+function deleteProblem(id) {
+  if (state.problems.length <= 1) return;
+  state.problems = state.problems.filter(p => p.id !== id);
+  renderAll();
+}
+
+function moveProblem(id, dir) {
+  const i = state.problems.findIndex(p => p.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= state.problems.length) return;
+  [state.problems[i], state.problems[j]] = [state.problems[j], state.problems[i]];
+  renderAll();
+}
+
+/* ============================================================
+   ドラッグ＆ドロップ（ヒント並び替え）
+============================================================ */
+let dragSrcWord = null;
+
+function attachDragDrop() {
+  const area = document.getElementById('hint-chips-area');
+  if (!area) return;
+  area.querySelectorAll('.hint-chip').forEach(chip => {
+    chip.addEventListener('dragstart', e => {
+      dragSrcWord = chip.dataset.word;
+      chip.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    chip.addEventListener('dragend', () => {
+      chip.classList.remove('dragging');
+      area.querySelectorAll('.hint-chip').forEach(c => c.classList.remove('drag-over'));
+    });
+    chip.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (chip.dataset.word !== dragSrcWord) chip.classList.add('drag-over');
+    });
+    chip.addEventListener('dragleave', () => chip.classList.remove('drag-over'));
+    chip.addEventListener('drop', e => {
+      e.preventDefault();
+      chip.classList.remove('drag-over');
+      const dst = chip.dataset.word;
+      if (!dragSrcWord || dragSrcWord === dst) return;
+      const order = [...state.hintOrder];
+      const si = order.indexOf(dragSrcWord), di = order.indexOf(dst);
+      if (si < 0 || di < 0) return;
+      order.splice(si, 1);
+      order.splice(di, 0, dragSrcWord);
+      state.hintOrder = order;
+      saveState();
+      renderSheet();
+    });
+  });
+}
+
+/* ============================================================
+   印刷
+============================================================ */
+function doPrint() {
+  const out = document.getElementById('print-output');
+  out.style.setProperty('--blank-box-size', state.boxSize + 'em');
+  const valid = state.problems.filter(p => p.text.trim());
+  const fs = state.fontSizes;
+
+  const titleCol = `
+    <div class="po-title-col" style="font-size:${fs.title}px">${esc(state.title)}</div>`;
+
+  const nameCol = state.showNameField ? `
+    <div class="po-name-col" style="font-size:${fs.name}px">${esc(state.nameLabel)}</div>` : '';
+
+  const problemsHTML = valid.map((p, i) => {
+    const num = CIRCLE_NUMS[i] || (i + 1);
+    return `<div class="po-problem-line"><span class="po-pnum">${num}</span>${tokensToHTML(parseText(p.text))}</div>`;
+  }).join('');
+
+  const hintChips = state.hintOrder.map(h => `<span class="po-hint-chip">${esc(h)}</span>`).join('');
+  const hintCol = (state.showHintSection && state.hintOrder.length > 0) ? `
+    <div class="po-hint-col" style="font-size:${fs.hints}px">
+      <span class="po-hint-label">ヒント</span>
+      <div class="po-hint-chips">${hintChips}</div>
+    </div>` : '';
+
+  out.innerHTML = `
+    <div class="po-vbox">
+      ${titleCol}
+      ${nameCol}
+      <div class="po-problems" style="font-size:${fs.problems}px">${problemsHTML}</div>
+      ${hintCol}
+    </div>`;
+
+  window.print();
+}
+
+/* ============================================================
+   イベント設定・初期化
+============================================================ */
+document.getElementById('toggle-name').addEventListener('change', e => {
+  state.showNameField = e.target.checked;
+  renderAll();
+});
+document.getElementById('toggle-hint').addEventListener('change', e => {
+  state.showHintSection = e.target.checked;
+  renderAll();
+});
+document.getElementById('toggle-crosshair').addEventListener('change', e => {
+  state.showCrosshair = e.target.checked;
+  renderAll();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeEditor();
+});
+document.getElementById('pe-reading-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter')  { e.preventDefault(); confirmReading(); }
+  if (e.key === 'Escape') { e.preventDefault(); cancelReading(); }
+});
+
+/* 起動 */
+loadState();
+document.getElementById('toggle-name').checked = state.showNameField;
+document.getElementById('toggle-hint').checked = state.showHintSection;
+document.getElementById('toggle-crosshair').checked = state.showCrosshair;
+syncFSStepper();
+applyBoxSize();
+renderAll();
+setMode(state.mode);
+</script>
+</body>
+</html>
