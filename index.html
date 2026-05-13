@@ -329,20 +329,24 @@ body {
 }
 
 /* □＋よみ のグループ */
-/* padding-block-start = vertical-rl では物理右。right/left は Safari で解釈が逆になるため論理プロパティを使用 */
+/* writing-mode:horizontal-tb でラッパー内だけ水平レイアウトにして flex で配置。
+   子要素で writing-mode:vertical-rl を再指定することで内容は縦組みを維持。 */
 .blank-reading-wrap {
-  display: inline-block;
-  position: relative;
+  display: inline-flex;
+  writing-mode: horizontal-tb;
+  flex-direction: row;     /* 左＝□、右＝よみ（vertical-rl では右＝ルビ位置） */
+  align-items: flex-start;
+  gap: 0.15em;
   vertical-align: middle;
-  margin-inline: 0.25em;
-  padding-block-start: 0.65em;
 }
 .blank-rt {
-  position: absolute;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
   font-size: 0.52em;
-  inset-block-start: 0;  /* vertical-rl では物理右 */
-  inset-inline-start: 0; /* vertical-rl では物理上 */
-  white-space: nowrap;
+}
+.blank-boxes {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 /* 点線十字線 */
@@ -759,13 +763,15 @@ ruby rt { font-size: 0.52em; }
     margin-inline: 0.15em;
   }
   .blank-reading-wrap {
-    display: inline-block;
-    position: relative;
+    display: inline-flex;
+    writing-mode: horizontal-tb;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.15em;
     vertical-align: middle;
-    margin-inline: 0.25em;
-    padding-block-start: 0.65em;
   }
-  .blank-rt { position: absolute; font-size: 0.52em; inset-block-start: 0; inset-inline-start: 0; white-space: nowrap; }
+  .blank-rt { writing-mode: vertical-rl; text-orientation: upright; font-size: 0.52em; }
+  .blank-boxes { writing-mode: vertical-rl; text-orientation: upright; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
