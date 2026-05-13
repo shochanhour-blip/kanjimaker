@@ -332,7 +332,7 @@ body {
 }
 
 /* ルビ付き空白欄グループの前後にさらに余白 */
-ruby:has(.blank-box) {
+ruby.ruby-blank {
   margin-inline: 0.25em;
 }
 
@@ -361,7 +361,7 @@ ruby:has(.blank-box) {
 ruby { ruby-align: center; }
 ruby rt { font-size: 0.52em; }
 /* 縦書きでは rt は□の右側に来る。padding-left で□との隙間を確保 */
-ruby:has(.blank-box) rt { padding-left: 0.4em; }
+ruby.ruby-blank rt { padding-left: 0.4em; }
 
 /* 編集モード: 問題列 */
 .edit-mode .problem-col-wrap { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
@@ -751,8 +751,8 @@ ruby:has(.blank-box) rt { padding-left: 0.4em; }
     vertical-align: middle;
     margin-inline: 0.15em;
   }
-  ruby:has(.blank-box) { margin-inline: 0.25em; }
-  ruby:has(.blank-box) rt { padding-left: 0.4em; }
+  ruby.ruby-blank { margin-inline: 0.25em; }
+  ruby.ruby-blank rt { padding-left: 0.4em; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
@@ -962,7 +962,7 @@ function blankBoxes(content, reading) {
   const cls = 'blank-box' + (state.showCrosshair ? ' has-cross' : '');
   const boxes = Array.from({length: count}, () => `<span class="${cls}"></span>`).join('');
   return reading
-    ? `<ruby>${boxes}<rt>${esc(reading)}</rt></ruby>`
+    ? `<ruby class="ruby-blank">${boxes}<rt>${esc(reading)}</rt></ruby>`
     : boxes;
 }
 
