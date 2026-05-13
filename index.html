@@ -328,19 +328,20 @@ body {
   margin-inline: 0.15em;   /* 縦書き flow 方向（上下）に余白 */
 }
 
-/* □＋よみ のグループ（position:absolute で物理右側に確実配置） */
+/* □＋よみ のグループ */
+/* padding-block-start = vertical-rl では物理右。right/left は Safari で解釈が逆になるため論理プロパティを使用 */
 .blank-reading-wrap {
   display: inline-block;
   position: relative;
   vertical-align: middle;
   margin-inline: 0.25em;
-  padding-right: 0.65em; /* vertical-rl では物理右＝列の手前側＝よみが入るスペース */
+  padding-block-start: 0.65em;
 }
 .blank-rt {
   position: absolute;
   font-size: 0.52em;
-  right: 0;
-  top: 0;
+  inset-block-start: 0;  /* vertical-rl では物理右 */
+  inset-inline-start: 0; /* vertical-rl では物理上 */
   white-space: nowrap;
 }
 
@@ -762,9 +763,9 @@ ruby rt { font-size: 0.52em; }
     position: relative;
     vertical-align: middle;
     margin-inline: 0.25em;
-    padding-right: 0.65em;
+    padding-block-start: 0.65em;
   }
-  .blank-rt { position: absolute; font-size: 0.52em; right: 0; top: 0; white-space: nowrap; }
+  .blank-rt { position: absolute; font-size: 0.52em; inset-block-start: 0; inset-inline-start: 0; white-space: nowrap; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
