@@ -328,17 +328,19 @@ body {
   margin-inline: 0.15em;   /* 縦書き flow 方向（上下）に余白 */
 }
 
-/* □＋よみ のグループ（Safari の ruby バグを回避するため flex で手動配置） */
+/* □＋よみ のグループ（position:absolute で物理右側に確実配置） */
 .blank-reading-wrap {
-  display: inline-flex;
-  flex-direction: column; /* vertical-rl では block 方向＝右→左：よみが右、□が左 */
-  align-items: flex-start;
+  display: inline-block;
+  position: relative;
   vertical-align: middle;
   margin-inline: 0.25em;
-  gap: 0.15em;
+  padding-right: 0.65em; /* vertical-rl では物理右＝列の手前側＝よみが入るスペース */
 }
 .blank-rt {
+  position: absolute;
   font-size: 0.52em;
+  right: 0;
+  top: 0;
   white-space: nowrap;
 }
 
@@ -756,14 +758,13 @@ ruby rt { font-size: 0.52em; }
     margin-inline: 0.15em;
   }
   .blank-reading-wrap {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: inline-block;
+    position: relative;
     vertical-align: middle;
     margin-inline: 0.25em;
-    gap: 0.15em;
+    padding-right: 0.65em;
   }
-  .blank-rt { font-size: 0.52em; white-space: nowrap; }
+  .blank-rt { position: absolute; font-size: 0.52em; right: 0; top: 0; white-space: nowrap; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
@@ -973,7 +974,7 @@ function blankBoxes(content, reading) {
   const cls = 'blank-box' + (state.showCrosshair ? ' has-cross' : '');
   const boxes = Array.from({length: count}, () => `<span class="${cls}"></span>`).join('');
   return reading
-    ? `<span class="blank-reading-wrap"><span class="blank-rt">${esc(reading)}</span><span class="blank-boxes">${boxes}</span></span>`
+    ? `<span class="blank-reading-wrap"><span class="blank-boxes">${boxes}</span><span class="blank-rt">${esc(reading)}</span></span>`
     : boxes;
 }
 
