@@ -328,9 +328,18 @@ body {
   margin-inline: 0.15em;   /* 縦書き flow 方向（上下）に余白 */
 }
 
-/* ルビ付き空白欄グループの前後にさらに余白 */
-ruby.ruby-blank {
+/* □＋よみ のグループ（Safari の ruby バグを回避するため flex で手動配置） */
+.blank-reading-wrap {
+  display: inline-flex;
+  flex-direction: column; /* vertical-rl では block 方向＝右→左：よみが右、□が左 */
+  align-items: flex-start;
+  vertical-align: middle;
   margin-inline: 0.25em;
+  gap: 0.15em;
+}
+.blank-rt {
+  font-size: 0.52em;
+  white-space: nowrap;
 }
 
 /* 点線十字線 */
@@ -357,8 +366,6 @@ ruby.ruby-blank {
 
 ruby { ruby-align: center; }
 ruby rt { font-size: 0.52em; }
-/* 縦書きでは rt は□の右側に来る。padding-left で□との隙間を確保 */
-ruby.ruby-blank rt { padding-left: 0.4em; }
 
 /* 編集モード: 問題列 */
 .edit-mode .problem-col-wrap { cursor: pointer; border-radius: 4px; transition: background 0.15s; }
@@ -748,8 +755,15 @@ ruby.ruby-blank rt { padding-left: 0.4em; }
     vertical-align: middle;
     margin-inline: 0.15em;
   }
-  ruby.ruby-blank { margin-inline: 0.25em; }
-  ruby.ruby-blank rt { padding-left: 0.4em; }
+  .blank-reading-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    vertical-align: middle;
+    margin-inline: 0.25em;
+    gap: 0.15em;
+  }
+  .blank-rt { font-size: 0.52em; white-space: nowrap; }
   .blank-box.has-cross::before {
     content: '';
     position: absolute;
@@ -959,7 +973,7 @@ function blankBoxes(content, reading) {
   const cls = 'blank-box' + (state.showCrosshair ? ' has-cross' : '');
   const boxes = Array.from({length: count}, () => `<span class="${cls}"></span>`).join('');
   return reading
-    ? `<ruby class="ruby-blank">${boxes}<rt>${esc(reading)}</rt></ruby>`
+    ? `<span class="blank-reading-wrap"><span class="blank-rt">${esc(reading)}</span><span class="blank-boxes">${boxes}</span></span>`
     : boxes;
 }
 
