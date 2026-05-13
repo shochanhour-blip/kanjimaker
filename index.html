@@ -295,7 +295,7 @@ body {
   height: 100%;
   overflow: hidden;
   letter-spacing: 0.05em;
-  line-height: 2.2;
+  line-height: 2.8;
   padding: 0 6px;
   display: flex;
   flex-direction: column;
@@ -714,7 +714,7 @@ ruby.ruby-blank rt { padding-left: 0.4em; }
     flex-shrink: 0;
     height: 100%;
     overflow: hidden;
-    line-height: 2.3;
+    line-height: 2.8;
     letter-spacing: 0.05em;
     padding: 0 3mm;
     display: flex;
@@ -1053,6 +1053,8 @@ function adjBox(delta) {
 function applyBoxSize() {
   const sheet = document.getElementById('preview-sheet');
   sheet.style.setProperty('--blank-box-size', state.boxSize + 'em');
+  const prob = sheet.querySelector('.sheet-problems');
+  if (prob) prob.style.lineHeight = Math.max(2.2, state.boxSize + 0.8).toFixed(1);
 }
 
 function applyFontSizes() {
