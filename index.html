@@ -1061,6 +1061,9 @@ function adjBox(delta) {
 function applyBoxSize() {
   const sheet = document.getElementById('preview-sheet');
   sheet.style.setProperty('--blank-box-size', state.boxSize + 'em');
+  const lh = Math.max(2.2, state.boxSize + 0.2).toFixed(1);
+  const prob = sheet.querySelector('.sheet-problems');
+  if (prob) prob.style.lineHeight = lh;
 }
 
 function adjRtSize(delta) {
@@ -1157,7 +1160,7 @@ function renderSheet() {
     <div class="sheet-vbox">
       ${titleCol}
       ${nameCol}
-      <div class="sheet-problems" style="font-size:${state.fontSizes.problems}px">
+      <div class="sheet-problems" style="font-size:${state.fontSizes.problems}px;line-height:${Math.max(2.2, state.boxSize + 0.2).toFixed(1)}">
         ${problemsHTML}${addCol}
       </div>
       ${hintCol}
@@ -1389,7 +1392,7 @@ function doPrint() {
     <div class="po-vbox">
       ${titleCol}
       ${nameCol}
-      <div class="po-problems" style="font-size:${fs.problems}px">${problemsHTML}</div>
+      <div class="po-problems" style="font-size:${fs.problems}px;line-height:${Math.max(2.2, state.boxSize + 0.2).toFixed(1)}">${problemsHTML}</div>
       ${hintCol}
     </div>`;
 
